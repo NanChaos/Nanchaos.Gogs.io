@@ -4,7 +4,7 @@
 commit_message="Automated commit of all files in current directory and subdirectories"
 
 # 设置远程分支名称（根据需要修改）
-remote_branch="main"
+remote_branch="master"
 
 # 检查是否在 Git 仓库中
 if [ ! -d ".git" ]; then
