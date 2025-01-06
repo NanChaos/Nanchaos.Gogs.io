@@ -132,7 +132,7 @@ private static class IntegerCache {
 
   - byte是全范围，但是也是-128~127
 
-  - ```java
+    ```java
     private static class ByteCache {
             private ByteCache(){}
     
@@ -145,35 +145,41 @@ private static class IntegerCache {
         }
     ```
 
+    
+
 - Character
 
-  - ```java
-    private static class CharacterCache {
-        private CharacterCache(){}
-    
-        static final Character cache[] = new Character[127 + 1];
-    
-        static {
-            for (int i = 0; i < cache.length; i++)
-                cache[i] = new Character((char)i);
-        }
-    }
-    ```
+  ```java
+  private static class CharacterCache {
+      private CharacterCache(){}
+  
+      static final Character cache[] = new Character[127 + 1];
+  
+      static {
+          for (int i = 0; i < cache.length; i++)
+              cache[i] = new Character((char)i);
+      }
+  }
+  ```
+
+  
 
 - Long
 
-  - ```java
-    private static class LongCache {
-            private LongCache(){}
-    
-            static final Long cache[] = new Long[-(-128) + 127 + 1];
-    
-            static {
-                for(int i = 0; i < cache.length; i++)
-                    cache[i] = new Long(i - 128);
-            }
-    }
-    ```
+  ```java
+  private static class LongCache {
+          private LongCache(){}
+  
+          static final Long cache[] = new Long[-(-128) + 127 + 1];
+  
+          static {
+              for(int i = 0; i < cache.length; i++)
+                  cache[i] = new Long(i - 128);
+          }
+  }
+  ```
+
+  
 
 - Short
 

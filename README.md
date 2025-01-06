@@ -16,6 +16,11 @@
 
 #### 1.1.1 Java
 
+> 参考一下站点、书籍
+>
+> - [Java 全栈知识体系](https://pdai.tech/)
+> - [深入浅出Java多线程](https://github.com/RedSpider1/concurrent)
+
 - [Java基础](./Java/Java.md)
 - Java 集合框架
 - Java 多线程与并发
