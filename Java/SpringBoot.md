@@ -284,3 +284,85 @@ public class RedisTest {
 
 ```
 
+
+
+## SpringBoot With Elasticsearch
+
+### 知识
+
+> ElasticSearch支持JDBC协议，但是需要白金版（platinum）才能使用SQL，如果想使用 DataGrip连接ES，就需要使用白金版
+
+### 部署
+
+⚠️ 注意：Spring 和 ES 有版本对应关系，具体关系，如下: [Spring and ES 版本对应关系](https://docs.spring.io/spring-data/elasticsearch/reference/elasticsearch/versions.html)，目前部署的是 `ES 7.17.26`，使用 `SpringBoot 2.7.x`，使用的 Kibana 也是同 ES`7.17.26`版本
+
+![image-20250114151408072](./assets/image-20250114151408072.png)
+
+#### By Docker
+
+```shell
+docker network create elastic
+
+# elasticsearch
+docker pull docker.elastic.co/elasticsearch/elasticsearch:7.17.26
+docker run --name es01 --net elastic -p 9200:9200 -p 9300:9300 -it -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:7.17.26
+
+# kibana
+docker pull docker.elastic.co/kibana/kibana:7.17.26
+docker run --name kib01 -e ELASTICSEARCH_HOSTS=http://es01:9200 --net elastic -p 5601:5601 docker.elastic.co/kibana/kibana:7.17.26
+```
+
+![image-20250114155008852](./assets/image-20250114155008852.png)
+
+#### 问题
+
+##### 01、 ES重置密码
+
+> ES 重置密码后，原本的 Kibana 可能会连不上ES，参照问题 2 修改kibana配置文件
+
+```shell
+# ES 7.x 重置 es 密码 可以换为 interactive 来手动设置密码
+# 01 进入容器
+docker exec -it es01 /bin/bash
+
+# 02 修改 /usr/share/elasticsearch/config/elasticsearch.yml,添加以下内容
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-headers: Authorization
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
+
+# 添加后需要重启容器
+docker restart es01
+
+# 03 重置 es 密码 
+./bin/elasticsearch-setup-passwords interactive
+# bin/elasticsearch-setup-passwords auto|interactive
+
+# ES 8 以后可以直接用这个
+docker exec -it es01 /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
+docker exec -it es01 /usr/share/elasticsearch/bin/elasticsearch-create-enrollment-token -s kibana
+```
+
+
+
+##### 02、 Kibana提示Server is not yet
+
+```shell
+# 01 进入容器
+docker exec -it kib01 /bin/bash
+
+# 02 改 /usr/share/kibana/config/kibana.yml ，添加以下内容
+# 因为在同一网络下，es01就是 ES 容器的名称
+elasticsearch.hosts: [ "http://es01:9200" ]
+monitoring.ui.container.elasticsearch.enabled: true
+# set language to chinese
+i18n.locale: "zh-CN"
+# 以下这两行，配了不会实际用，不配就会Kibana server is not ready yet，没有深究
+elasticsearch.username: "elastic"
+elasticsearch.password: "Nanchaos@1"
+```
+
+
+
+### 使用
