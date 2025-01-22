@@ -10,7 +10,7 @@
 
 ### 0.2 关联代码
 
-[代码仓库 tech-validation](http://124.223.113.25:10880/nanchaos/tech-validation)
+[代码仓库 tech-validation](https://github.com/NanChaos/tech-validation.git)
 
 ## 一、知识体系
 
