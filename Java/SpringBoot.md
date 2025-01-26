@@ -1,10 +1,34 @@
-以下所有模块几乎都分为`知识`、`部署`、`使用`，知识一般会链接到其他文档，部署一般都是使用 Docker，会给到命令，使用一般都是通过 SpringBoot 写一个测试例，所以可以提前准备好一个 SpringBoot 应用
+以下所有模块几乎都分为`知识`、`部署`、`使用`，
+
+- 知识一般会链接到其他文档，
+- 部署一般都是使用 Docker，会给到命令，
+- 使用一般都是通过 SpringBoot 写一个测试例，但是不会很麻烦。所以可以提前准备好一个 SpringBoot 应用
 
 ## SpringBoot AOP
 
 ### 知识
 
+#### AOP
 
+- AOP（Aspect Oriented Programming）面向切面编程，是对面向对象编程的补充
+
+- AOP可以在不修改功能代码的前提下，使用运行时动态代理的技术对已有代码逻辑进行增强
+
+####  Spring AOP
+
+Spring AOP 主要使用动态代理技术来实现，如果是被代理的类实现了接口，则使用JDK动态代理，如果被代理的类没有实现接口，则使用CGLIB进行代理
+
+##### 代理形式
+
+###### JDK动态代理
+
+JDK动态代理，字面理解，就是Java提供的一种动态生成对象代理的机制，它允许在运行时创建一个实现了指定接口的代理类。本质就是在使用Java的反射机制，生成一个基于接口的代理类，这个代理类包含了对原始方法的调用，进而运营开发在前后添加自定义逻辑
+
+至于性能的话，因为使用的是反射，所以在创建时会相对较慢，但是在方法调用时，因为直接调用了接口方法，所以性能较好
+
+###### CGLIB
+
+CGLIB是代码生成类库，CGLIB代理通过生成业务类的子类作为代理类，从而实现对目标对象的功能拓展，（基于ASM框架，ASM框架是一个Java字节码操控和分析框架，它允许开发者以二进制形式修改已有类或者动态生成类）
 
 ### 使用
 
@@ -178,9 +202,10 @@ public class AppInterfaceLogAdvice {
 > 如果是云服务器，记得防火墙设置
 
 ```shell
-# 创建MySQL容器 注意替换yourpassword
- docker run -di --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=yourpassword mysql
- 
+# 创建MySQL容器 注意替换yourpassword， 可以加上--restatrt always 以打开Docker
+docker run -di --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=Nanchaos@1 mysql
+docker run -di --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=yourpassword mysql
+
 # 上面已创建完成，但是mysql 8以后不能使用 root 账户远程登录，所以单独创建一个用户专门用来远程登录
 # 进入容器
 docker exec -it mysql /bin/bash

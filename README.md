@@ -2,6 +2,8 @@
 
 ## 零、前提
 
+只是用来梳理自己的知识库，查缺补漏。
+
 ### 0.1 更新脚本
 
 ```shell
@@ -22,6 +24,8 @@
 >
 > - [Java 全栈知识体系](https://pdai.tech/)
 > - [深入浅出Java多线程](https://github.com/RedSpider1/concurrent)
+> - https://gitee.com/itwanger/JavaBooks#jvm
+> - https://github.com/itwanger/LearnCS-ByYourself
 
 - [Java基础](./Java/Java.md)
 - Java 集合框架
@@ -37,17 +41,29 @@
 
 #### 1.2.1 Redis
 
+TODO
+
 #### 1.2.2 ElatsicSearch
+
+TODO
 
 #### 1.2.3 MQ
 
 ##### 1.2.3.1 Kafka
 
+TODO
+
 ##### 1.2.3.2 RocketMQ
+
+TODO
 
 ##### 1.2.3.3 RabbitMQ
 
+TODO
+
 ### 1.3 数据库
+
+TODO
 
 ### 1.4 工具
 
