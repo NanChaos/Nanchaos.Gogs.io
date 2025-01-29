@@ -161,6 +161,9 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 ```java
 package com.nanchaos.tech.jvm;
 
+/**
+ * VM Args：-Xss128k
+ */
 public class StackOOMDemo {
     private int stackLength = 1;
 
