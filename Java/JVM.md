@@ -1,16 +1,58 @@
 ## 二、Java内存区域与内存管理
 
-### Java内存划分
+### 2.1 Java内存划分
 
-### Hotspot虚拟机与内存
+涉及到内存分配，就会有OutOfMemory的可能，涉及到栈，就会有StackOverflow的可能
 
-#### 对象的创建
+#### 2.1.1 程序计数器
+
+线程私有，字节码解释器工作时就是通过改变这个计数器的值来选取下一条需要执行的字节码指令，控制程序的执行。如果正在执行的是一个Java方法，记录的是正在执行的虚拟机字节码指令的地址；如果正在执行的是native方法，这个计数器值则应为空（Undefined）。
+
+#### 2.1.2 Java 虚拟机栈
+
+线程私有，虚拟机栈描述的是Java方法执行的线程内存模型。每个方法被执行的时候，Java虚拟机都会同步创建一个栈帧（Stack Frame）用于存储局部变量表、操作数栈、动态连接、方法出口等信息
+
+#### 2.1.3 Java本地方法栈
+
+描述的是Native方法执行的线程内存模型
+
+#### 2.1.4 Java堆
+
+> 所有的对象实例以及数组都应当在堆上分配
+>
+> 关联到一些词：新生代、老年代、Eden、Survivor、Minor GC、Young GC、Full GC等
+
+重点中的重点。线程共享，又称GC堆，垃圾收集在这里大放异彩。主要存放的就是类实例
+
+#### 2.1.5 方法区
+
+> 忘记永久代，从JDK8开始，已经没有永久代了
+>
+> 元空间Meta Space：元空间是Java8以后对方法区的一种实现形式，以前用永久代实现，后面用元空间实现
+
+线程共享，用于存储已被虚拟机加载的类型信息、常量、静态变量、即时编译器编译后的代码缓存等数据
+
+#### 2.1.5-2 运行时常量池（归属于方法区）
+
+> 常量不一定只有编译期才能产生，比如String.intern()
+
+class文件中有常量池表，用于存放编译期生成的各种字面量与符号引用，这部分内容将在类加载后存放到方法区的运行时常量池中
+
+#### 2.1.6 直接内存
+
+ 直接内存（Direct Memory）并不是虚拟机运行时数据区的一部分，在JDK 1.4中新加入了NIO（New Input/Output）类，引入了一种基于通道（Channel）与缓冲区（Buffer）的I/O方式，它可以使用Native函数库直接分配堆外内存，然后通过一个存储在Java堆里面的DirectByteBuffer对象作为这块内存的引用进行操作。这样能在一些场景中显著提高性能，因为避免了在Java堆和Native堆中来回复制数据
+
+
+
+### 2.2 Hotspot虚拟机与内存
+
+#### 2.2.1 对象的创建
+
+##### 创建过程
 
 `new 指令`、`常量池定位符号引用`、`类加载检查`、`对象分配内存`、`<init>方法`
 
-
-
-对象分配内存
+##### 内存分配方式
 
 - 指针碰撞
   - 假设Java堆中内存是绝对规整的，所有被使用过的内存都被放在一边，空闲的内存被放在另一边，中间放着一个指针作为分界点的指示器，那所分配内存就仅仅是把那个指针向空闲空间方向挪动一段与对象大小相等的距离
@@ -18,9 +60,179 @@
 - 空闲列表
   - 如果Java堆中的内存并不是规整的，已被使用的内存和空闲的内存相互交错在一起，那就没有办法简单地进行指针碰撞了，虚拟机就必须维护一个列表，记录上哪些内存块是可用的，在分配的时候从列表中找到一块足够大的空间划分给对象实例，并更新列表上的记录
 
-#### 对象的内存布局
 
-#### 对象的访问定位
+
+而`对象分配内存`，对象创建在虚拟机中是非常频繁的行为，即使仅仅修改一个指针所指向的位置，在并发情况下也并不是线程安全的
+
+- 方案一：对分配内存空间的动作进行同步处理——实际上虚拟机是采用CAS配上失败重试的方式保证更新操作的原子性
+
+- 方案二：每个线程在Java堆中预先分配一小块内存，称为本地线程分配缓冲（Thread Local Allocation Buffer，TLAB），哪个线程要分配内存，就在哪个线程的本地缓冲区中分配，只有本地缓冲区用完了，分配新的缓存区时才需要同步锁定。虚拟机是否使用TLAB，可以通过-XX：+/-UseTLAB参数来设定
+
+#### 2.2.2 对象的内存布局
+
+主要包括：`对象头`、`实例数据`、`对齐填充`
+
+##### 对象头
+
+HotSpot虚拟机对象的对象头部分包括两类信息
+
+- 第一类--Mark Word：用于存储对象自身的运行时数据，如哈希码（HashCode）、GC分代年龄、锁状态标志、线程持有的锁、偏向线程ID、偏向时间戳等，这部分数据的长度在32位和64位的虚拟机（未开启压缩指针）中分别为32个比特和64个比特，
+- 第二类--类型指针：即对象指向它的类型元数据的指针，Java虚拟机通过这个指针来确定该对象是哪个类的实例。并非所有虚拟机都如此实现，此外，如果对象是一个Java数组，那在对象头中还必须有一块用于记录数组长度的数据
+
+##### 实例数据
+
+实例数据是对象真正存储的有效信息，即我们在程序代码里面所定义的各种类型的字段内容，无论是从父类继承下来的，还是在子类中定义的字段都必须记录起来
+
+##### 对齐填充
+
+对齐填充并不是必然存在的，也没有特别的含义，它仅仅起着占位符的作用。HotSpot虚拟机的自动内存管理系统要求对象起始地址必须是8字节的整数倍，换句话说就是任何对象的大小都必须是8字节的整数倍。对象头部分已经被精心设计成正好是8字节的倍数（1倍或者2倍），因此，如果对象实例数据部分没有对齐的话，就需要通过对齐填充来补全。
+
+
+
+#### 2.2.3 对象的访问定位
+
+Java程序会通过栈上的reference数据来操作堆上的具体对象。由于reference类型在《Java虚拟机规范》里面只规定了它是一个指向对象的引用，并没有定义这个引用应该通过什么方式去定位、访问到堆中对象的具体位置，所以对象访问方式也是由虚拟机实现而定的
+
+> ##### 句柄访问
+>
+> Java堆中将可能会划分出一块内存来作为句柄池，reference中存储的就是对象的句柄地址，而句柄中包含了对象实例数据与类型数据各自具体的地址信息
+>
+> 最大好处就是reference中存储的是稳定句柄地址，在对象被移动（垃圾收集时移动对象是非常普遍的行为）时只会改变句柄中的实例数据指针，而reference本身不需要被修改
+>
+> ##### 直接指针
+>
+> Java堆中对象的内存布局就必须考虑如何放置访问类型数据的相关信息，reference中存储的直接就是对象地址，如果只是访问对象本身的话，就不需要多一次间接访问的开销
+>
+> 最大的好处就是速度更快，它节省了一次指针定位的时间开销，由于对象访问在Java中非常频繁，因此这类开销积少成多也是一项极为可观的执行成本，HotSpot虚拟机就是使用的直接指针
+>
+> 例外：如果使用了Shenandoah收集器的话也会有一次额外的转发
+
+
+
+### 2.3 OOM
+
+#### 2.3.1 堆溢出 OOM
+
+```java
+package com.nanchaos.tech.jvm;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * VM Args：-Xms10m -Xmx10m -XX:+HeapDumpOnOutOfMemoryError
+ */
+public class HeapOOMDemo {
+    static class OOMObject {
+    }
+
+    public static void main(String[] args) {
+        List<OOMObject> list = new ArrayList<OOMObject>();
+
+        while (true) {
+            list.add(new OOMObject());
+        }
+    }
+}
+```
+
+
+
+```shell
+java.lang.OutOfMemoryError: Java heap space
+Dumping heap to java_pid12284.hprof ...
+Heap dump file created [13926054 bytes in 0.034 secs]
+Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
+	at java.util.Arrays.copyOf(Arrays.java:3210)
+	at java.util.Arrays.copyOf(Arrays.java:3181)
+	at java.util.ArrayList.grow(ArrayList.java:267)
+	at java.util.ArrayList.ensureExplicitCapacity(ArrayList.java:241)
+	at java.util.ArrayList.ensureCapacityInternal(ArrayList.java:233)
+	at java.util.ArrayList.add(ArrayList.java:464)
+	at com.nanchaos.tech.jvm.HeapOOMDemo.main(HeapOOMDemo.java:17)
+```
+
+
+
+#### 2.3.2 栈溢出
+
+虚拟机栈
+
+```java
+package com.nanchaos.tech.jvm;
+
+public class StackOOMDemo {
+    private int stackLength = 1;
+
+    public void stackLeak() {
+        stackLength++;
+        stackLeak();
+    }
+
+    public static void main(String[] args) throws Throwable {
+        StackOOMDemo oom = new StackOOMDemo();
+        try {
+            oom.stackLeak();
+        } catch (Throwable e) {
+            System.out.println("stack length:" + oom.stackLength);
+            throw e;
+        }
+    }
+
+}
+```
+
+
+
+```shell
+Exception in thread "main" java.lang.StackOverflowError
+	at com.nanchaos.tech.jvm.StackOOMDemo.stackLeak(StackOOMDemo.java:8)
+	at com.nanchaos.tech.jvm.StackOOMDemo.stackLeak(StackOOMDemo.java:8)
+	at com.nanchaos.tech.jvm.StackOOMDemo.stackLeak(StackOOMDemo.java:8)
+```
+
+
+
+#### 2.3.3 直接内存溢出
+
+```java
+package com.nanchaos.tech.jvm;
+
+import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
+
+/**
+ * VM Args：-Xmx20M -XX:MaxDirectMemorySize=10M
+ */
+public class DirectMemoryOOM {
+
+    private static final int _1MB = 1024 * 1024;
+
+    public static void main(String[] args) throws Exception {
+        Field unsafeField = Unsafe.class.getDeclaredFields()[0];
+        unsafeField.setAccessible(true);
+        Unsafe unsafe = (Unsafe) unsafeField.get(null);
+        while (true) {
+            unsafe.allocateMemory(_1MB);
+        }
+    }
+}
+```
+
+
+
+``` shell
+Exception in thread "main" java.lang.OutOfMemoryError
+	at sun.misc.Unsafe.allocateMemory(Native Method)
+	at com.nanchaos.tech.jvm.DirectMemoryOOM.main(DirectMemoryOOM.java:20)
+```
+
+
+
+#### 对比：
+
+如果是堆内存溢出，会提示：`java.lang.OutOfMemoryError: Java heap space`堆内存溢出，但是直接内存溢出不会
 
 ## 三、垃圾回收器与内存分配
 
