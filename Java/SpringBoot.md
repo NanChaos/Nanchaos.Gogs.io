@@ -237,7 +237,7 @@ source /xxx.sql
 
 ### 知识
 
-此处不做具体展开，详细参照 [Redis 知识](../middleware/Redis.md)
+此处不做具体展开，详细参照 [Redis 知识](../中间件/Redis.md)
 
 ### 部署
 
