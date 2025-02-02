@@ -29,7 +29,7 @@ if [ ! -z "$uncommitted_changes" ]; then
   git commit -m "$commit_message"
   echo "已commit所有变更。"
 else
-  echo "没有新增的commit，跳过commit。"
+  echo "没有新增的commit"
 fi
 
 # 4. 检查remote_branch是否有没有push的内容
