@@ -8,9 +8,9 @@
 
 目前感觉就是只会根据API编程，原理？知道一丢丢，但绝对不全。感觉什么都不会的样子。
 
-目前所处的公司面向C端，PV一天不到500w，所以也谈不上高并发。有真正的高并发场景吗？偶尔有大型活动，秒级能到达几千。所以望读者注意，如果看到有对并发相关的描述，我的理解一定不完善，毕竟我所面临的场景很有限。
+目前所处的公司面向C端。负责C端，PV一天不到500w，所以也谈不上高并发。有真正的高并发场景吗？偶尔有大型活动，秒级能到达几千、上万。所以望读者注意，如果看到有对并发相关的描述，我的理解一定不完善，毕竟我所面临的场景很有限。
 
-要带着批判去思考，去看待事物。其次未知全貌，不予置评。共勉
+要带着批判去思考，去看待事物。其次未知全貌，不予置评。共勉。
 
 ### 0.1 更新脚本
 
@@ -36,6 +36,9 @@
 > - [深入浅出Java多线程](https://github.com/RedSpider1/concurrent)
 > - https://gitee.com/itwanger/JavaBooks#jvm
 > - https://github.com/itwanger/LearnCS-ByYourself
+> - https://github.com/CL0610/Java-concurrency
+> - 有一个讲的很棒的并发文章，可以找不到了
+> - https://github.com/doocs/advanced-java
 
 - [Java基础](./Java/Java.md)
 - Java 集合框架
