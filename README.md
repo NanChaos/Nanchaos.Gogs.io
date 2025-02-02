@@ -24,6 +24,8 @@
 
 > 参考以下站点、书籍
 >
+> 站点应该会继续添加，书籍都存放在书籍目录中
+>
 > - [Java 全栈知识体系](https://pdai.tech/)
 > - [深入浅出Java多线程](https://github.com/RedSpider1/concurrent)
 > - https://gitee.com/itwanger/JavaBooks#jvm
