@@ -42,7 +42,7 @@
 
 - [Java基础](./Java/Java.md)
 - Java 集合框架
-- Java 多线程与并发
+- [Java 多线程与并发](./Java/concurrent.md)
 - Java IO
 - [JVM知识](./Java/JVM.md)
 
