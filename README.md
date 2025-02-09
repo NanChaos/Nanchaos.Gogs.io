@@ -37,7 +37,7 @@
 > - https://gitee.com/itwanger/JavaBooks#jvm
 > - https://github.com/itwanger/LearnCS-ByYourself
 > - https://github.com/CL0610/Java-concurrency
-> - 有一个讲的很棒的并发文章，可惜找不到了
+> - https://github.com/RedSpider1/concurrent.git
 > - https://github.com/doocs/advanced-java
 
 - [Java基础](./Java/Java.md)
