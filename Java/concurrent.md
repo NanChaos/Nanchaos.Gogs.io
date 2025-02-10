@@ -456,7 +456,7 @@ public class ThreadPriorityInGroupDemo {
 - 执行状态(running)：线程正在使用CPU。
 - 等待状态(waiting): 线程经过等待事件的调用或者正在等待其他资源（如I/O）。  
 
-### 3.2 Java线程状态
+### 3.2 Java线程状态与转换
 
 ```java
 // copy from openJDK java.lang.Thread.State
@@ -475,7 +475,9 @@ public enum State {
     }
 ```
 
-#### 3.2.1 New
+#### 3.2.1 Java 线程状态
+
+##### 3.2.1.1 New
 
  处于NEW状态的线程此时尚未启动。这里的尚未启动指的是还没调用Thread实例的start()方法。如：
 
@@ -560,17 +562,17 @@ public class ThreadStateDemo {
 
 
 
-#### 3.2.2 RUNNABLE
+##### 3.2.1.2 RUNNABLE
 
 表示当前线程正在运行中。处于RUNNABLE状态的线程在Java虚拟机中运行，也有可能在等待其他系统资源（比如I/O）。
 
 > Java线程的**RUNNABLE**状态其实是包括了传统操作系统线程的**ready**和**running**两个状态的。
 
-#### 3.2.3 BLOCKED
+##### 3.2.1.3 BLOCKED
 
 阻塞状态。处于BLOCKED状态的线程正等待锁的释放以进入同步区。
 
-#### 3.2.4 WAITING
+##### 3.2.1.4 WAITING
 
 等待状态。处于等待状态的线程变成RUNNABLE状态需要其他线程唤醒。
 
@@ -582,7 +584,7 @@ public class ThreadStateDemo {
 
 
 
-#### 3.2.5 TIMED_WAITING
+##### 3.2.1.5 TIMED_WAITING
 
 超时等待状态。线程等待一个具体的时间，时间到后会被自动唤醒。
 
@@ -596,14 +598,344 @@ public class ThreadStateDemo {
 
 
 
-#### 3.2.6 TERMINATED
+##### 3.2.1.6 TERMINATED
 
 终止状态。此时线程已执行完毕。
 
 
+
+#### 3.2.2 状态转换
+
+##### 3.2.2.1 线程中断
+
+线程中断机制是一种协作机制，通过中断操作并不能直接终止一个线程，而是通知需要被中断的线程自行处理。
+
+- Thread.interrupt()：中断线程。这里的中断线程并不会立即停止线程，而是设置线程的中断状态为true（默认是flase）；
+- Thread.interrupted()：测试当前线程是否被中断。线程的中断状态受这个方法的影响，意思是调用一次使线程中断状态设置为true，连续调用两次会使得这个线程的中断状态重新转为false；
+- 
+  Thread.isInterrupted()：测试当前线程是否被中断。与上面方法不同的是调用这个方法并不会影响线程的中断状态。
 
 ### 3.3 Thread的几个方法
 
 - yield()：yield在英语里有放弃的意思，同样，这里的yield()指的是当前线程愿意让出对当前处理器的占用。这里需要注意的是，就算当前线程调用了yield()方法，程序在调度的时候，也还有可能继续运行这个线程的；
 - sleep()：静态方法，使当前线程睡眠一段时间；
 - join()：使当前线程等待另一个线程执行完毕之后再继续执行，内部调用的是Object类的wait方法实现的
+
+
+
+## 四、Java线程间的通信
+
+### 4.1 锁
+
+效果：先执行 A，再执行 B，借用一个锁来实现
+
+```java
+package com.nanchaos.tech.demo.threadCo;
+
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Default Description
+ *
+ * @author nanchaos
+ * @date 2025/2/10
+ * @time 17:20
+ */
+@Slf4j
+public class ExecuteInOrderByLockDemo {
+
+    public static void main(String[] args) {
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        executorService.execute(new ThreadB());
+        executorService.execute(new ThreadA());
+
+        executorService.execute(new ThreadA());
+        executorService.execute(new ThreadB());
+
+        /**
+         * result
+         * 17:23:20.739 ThreadB is running
+         * 17:23:20.741 ThreadA is running
+         * 17:23:20.741 ThreadA is running
+         * 17:23:20.741 ThreadB is running
+         */
+    }
+
+    private static class ThreadA implements Runnable {
+        @Override
+        public void run() {
+            synchronized (ExecuteInOrderByLockDemo.class) {
+                log.info("ThreadA is running");
+            }
+        }
+    }
+
+    private static class ThreadB implements Runnable {
+        @Override
+        public void run() {
+            synchronized (ExecuteInOrderByLockDemo.class) {
+                log.info("ThreadB is running");
+            }
+        }
+    }
+}
+
+```
+
+
+
+### 4.2 等待/通知机制
+
+效果：让线程A输出0，然后线程B输出0，再然后线程A输出1，再然后线程B输出1…以此类推
+
+```java
+package com.nanchaos.tech.demo.threadCo;
+
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Default Description
+ *
+ * @author nanchaos
+ * @date 2025/2/10
+ * @time 17:20
+ */
+@Slf4j
+public class ExecuteInOrderByWaitNotifyDemo {
+    private static final Object lock = new Object();
+
+    public static void main(String[] args) throws InterruptedException {
+        new Thread(new ThreadA()).start();
+        Thread.sleep(1000);
+        new Thread(new ThreadB()).start();
+    }
+
+    private static class ThreadA implements Runnable {
+        @Override
+        public void run() {
+            synchronized (lock) {
+                try {
+                    for (int i = 0; i < 5; i++) {
+                        log.info("ThreadA is running: {}", i);
+                        lock.notify();
+                        lock.wait();
+                    }
+                } catch (Exception e) {
+                    log.error("ThreadA exception happened, cause:{}", ExceptionUtils.getStackTrace(e));
+                }
+                lock.notify();
+            }
+        }
+    }
+
+    private static class ThreadB implements Runnable {
+        @Override
+        public void run() {
+            synchronized (lock) {
+                try {
+                    for (int i = 0; i < 5; i++) {
+                        log.info("ThreadB is running: {}", i);
+                        lock.notify();
+                        lock.wait();
+                    }
+                } catch (Exception e) {
+                    log.error("ThreadB exception happened, cause:{}", ExceptionUtils.getStackTrace(e));
+                }
+                lock.notify();
+            }
+        }
+
+    }
+}
+```
+
+
+
+执行结果
+
+```
+ThreadA is running: 0
+ThreadB is running: 0
+ThreadA is running: 1
+ThreadB is running: 1
+ThreadA is running: 2
+ThreadB is running: 2
+ThreadA is running: 3
+ThreadB is running: 3
+ThreadA is running: 4
+ThreadB is running: 4
+```
+
+
+
+### 4.3 信号量
+
+效果：让线程A输出0，然后线程B输出1，再然后线程A输出2…以此类推
+
+JDK提供了一个类似于“信号量”功能的类`Semaphore`。但本次是使用基于`volatile`关键字的自己实现的信号量通信。
+
+```java
+package com.nanchaos.tech.demo.threadCo;
+
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Default Description
+ *
+ * @author nanchaos
+ * @date 2025/2/10
+ * @time 17:57
+ */
+@Slf4j
+public class ExecuteInOrderBySignalDemo {
+
+    private static volatile int signal = 0;
+
+    public static void main(String[] args) throws InterruptedException {
+        new Thread(new ThreadA()).start();
+        Thread.sleep(1000);
+        new Thread(new ThreadB()).start();
+    }
+
+    private static class ThreadA implements Runnable {
+        @Override
+        public void run() {
+            while (signal < 5) {
+                if (signal % 2 == 0) {
+                    log.info("ThreadA signal is: {}", signal);
+                    synchronized (this) {
+                        signal++;
+                    }
+                }
+            }
+        }
+    }
+
+    private static class ThreadB implements Runnable {
+        @Override
+        public void run() {
+            while (signal < 5) {
+                if (signal % 2 == 1) {
+                    log.info("ThreadB signal is: {}", signal);
+                    synchronized (this) {
+                        signal = signal + 1;
+                    }
+                }
+            }
+        }
+    }
+}
+
+```
+
+
+
+### 4.4 管道
+
+使用管道多半与I/O流相关，当我们一个线程需要先另一个线程发送一个信息（比如字符串）或者文件等等时，就需要使用管道通信了
+
+```java
+package com.nanchaos.tech.demo.threadCo;
+
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import java.io.IOException;
+import java.io.PipedReader;
+import java.io.PipedWriter;
+
+/**
+ * Default Description
+ *
+ * @author nanchaos
+ * @date 2025/2/10
+ * @time 18:05
+ */
+@Slf4j
+public class ExecutePyPipeDemo {
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        PipedWriter writer = new PipedWriter();
+        PipedReader reader = new PipedReader();
+        writer.connect(reader);
+
+        new Thread(new ReaderThread(reader)).start();
+        Thread.sleep(1000);
+        new Thread(new WriterThread(writer)).start();
+    }
+
+    private static class ReaderThread implements Runnable {
+        private PipedReader reader;
+
+        public ReaderThread(PipedReader reader) {
+            this.reader = reader;
+        }
+
+        @Override
+        public void run() {
+            log.info("ExecutePyPipeDemo.ReaderThread start");
+            int receive = 0;
+            try {
+                while ((receive = reader.read()) != -1) {
+                    // 这里就不 log 了
+                    System.out.print((char) receive);
+                }
+            } catch (Exception e) {
+                log.error("ExecutePyPipeDemo.ReaderThread catch exception cause:{}", ExceptionUtils.getStackTrace(e));
+            }
+        }
+    }
+
+    private static class WriterThread implements Runnable {
+
+        private PipedWriter writer;
+
+        public WriterThread(PipedWriter writer) {
+            this.writer = writer;
+        }
+
+        @Override
+        public void run() {
+            log.info("ExecutePyPipeDemo.WriterThread start");
+            int receive = 0;
+            try {
+                writer.write("test");
+            } catch (Exception e) {
+                log.error("ExecutePyPipeDemo.WriterThread catch exception cause:{}", ExceptionUtils.getStackTrace(e));
+            } finally {
+                try {
+                    writer.close();
+                } catch (Exception e) {
+                    log.error("ExecutePyPipeDemo.WriterThread final exception cause:{}", ExceptionUtils.getStackTrace(e));
+                }
+            }
+        }
+    }
+}
+
+```
+
+
+
+### 4.5 其他方式
+
+#### 4.5.1 Thread.join
+
+```java
+```
+
+
+
+
+
+
+
+
+
